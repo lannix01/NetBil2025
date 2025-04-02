@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="expires" content="-1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrenNet - Select Package</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <meta name="msapplication-TileColor" content="#ef4036">
+    <meta name="theme-color" content="#ef4036">
+    <style>
+        .package-card {
+            border: 1px solid #0025a9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .package-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .package-card.selected {
+            background-color: rgba(0, 37, 169, 0.1);
+            border: 2px solid #0025a9;
+        }
+        .package-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0025a9;
+        }
+        .package-duration {
+            font-size: 1.1rem;
+        }
+        .package-speed {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        #loader {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6 mx-auto py-4">
+                <div class="text-center my-3 mt-5">
+                    <img width="250" src="img/logo.png" alt="" class="img-fluid">
+                </div>
+                <div class="card shadow mt-5" style="border: 1px solid #0025a9;">
+                    <div class="card-header">
+                        <h6 class="text-center">Select Your Package</h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Package Selection -->
+                        <div class="row" id="packageSelection">
+                            <div class="col-md-6">
+                                <div class="package-card" onclick="selectPackage('5bob_5min', '5 KSH')">
+                                    <div class="package-price">5 KSH</div>
+                                    <div class="package-duration">5 Minutes</div>
+                                    <div class="package-speed">10Mbps Speed</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="package-card" onclick="selectPackage('10bob_10min', '10 KSH')">
+                                    <div class="package-price">10 KSH</div>
+                                    <div class="package-duration">10 Minutes</div>
+                                    <div class="package-speed">10Mbps Speed</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="package-card" onclick="selectPackage('30bob_30min', '30 KSH')">
+                                    <div class="package-price">30 KSH</div>
+                                    <div class="package-duration">30 Minutes</div>
+                                    <div class="package-speed">6Mbps Speed</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loader (hidden by default) -->
+                        <div class="text-center" id="loader" style="transform: rotate(0 deg);">
+                            <img width="200" src="wifianim.gif" alt="" loading="lazy" class="img-fluid">
+                            <h6 id="pageMessage" style="color: #0025a9; font-weight: bold;" class="mt-3">Processing your request...</h6>
+                        </div>
+
+                        <!-- Hidden Forms -->
+                        <form name="login" action="/login" method="post" id="loginForm">
+                            <input type="hidden" id="lUsername" name="username" />
+                            <input type="hidden" id="lPassword" name="password" />
+                            <input type="hidden" name="dst" value="https://login.brennet.co.ke/connected" />
+                            <input type="hidden" name="popup" value="false" />
+                        </form>
+                    </div>
+                    <div class="card-footer" style="background-color: #0025a9;">
+                        <p class="text-center text-light"><small>&copy; 2022 - 2025. All rights reserved.</small></p>
+                        <p class="text-center text-light mt-4"><small>Powered by: NetBil<a class="text-light"
+                                    href="mailto:nichmu43@gmail.com"></a></small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectPackage(package, price) {
+            // Show loader
+            document.getElementById('packageSelection').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('pageMessage').innerText = 'Processing ' + price + ' package...';
+
+            // Generate random credentials (replace with your actual implementation)
+            const username = 'user_' + Math.random().toString(36).substr(2, 6);
+            const password = Math.random().toString(36).substr(2, 8);
+
+            // For M-Pesa integration, you would:
+            // 1. Show payment instructions here
+            // 2. Process payment
+            // 3. On success, proceed with login
+
+            // Simulate payment processing delay
+            async function processPayment(profile, price) {
+    const phone = prompt("Enter your M-Pesa phone number (format: 2547XXXXXXXX):");
+    if (!phone || !phone.match(/^2547\d{8}$/)) {
+        alert("Please enter a valid Safaricom phone number starting with 254");
+        return;
+    }
+
+    showLoader(`Initiating ${price} payment...`);
+
+    try {
+        const response = await fetch('mpesa_payment.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone: phone,
+                amount: price.replace(' KSH', ''),
+                profile: profile
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            // Start checking payment status
+            checkPaymentStatus(result.transaction_id, profile);
+        } else {
+            hideLoader();
+            alert("Payment failed: " + (result.message || "Unknown error"));
+        }
+    } catch (error) {
+        hideLoader();
+        alert("Network error: " + error.message);
+    }
+}
+
+function checkPaymentStatus(transactionId, profile) {
+    fetch(`check_payment.php?transaction_id=${transactionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'completed') {
+                // Auto-login with generated credentials
+                document.getElementById('lUsername').value = data.username;
+                document.getElementById('lPassword').value = data.password;
+                document.login.submit();
+            } else if (data.status === 'pending') {
+                // Check again after 5 seconds
+                setTimeout(() => checkPaymentStatus(transactionId, profile), 5000);
+            } else {
+                hideLoader();
+                alert("Payment processing failed. Please try again.");
+            }
+        });
+}
+            setTimeout(function() {
+                // Set credentials and submit
+                document.getElementById('lUsername').value = username;
+                document.getElementById('lPassword').value = password;
+                document.login.submit();
+            }, 2000);
+        }
+
+        // Handle error cases from original code
+        function checkErrors() {
+            if ("$(error)" == "") return;
+            
+            if ("$(error)".indexOf("no more sessions are allowed for user") == 0) {
+                alert("MAXIMUM devices connected to package. Please disconnect one of your devices and try again.\n\nIf you disconnected any recently wait for at least 5 minutes then try again. Otherwise, contact our support team for assistance.");
+            }
+            else if ("$(error)".indexOf("has reached traffic limit") !== -1) {
+                alert("You have depleted your data bundle. Please select a new package.");
+            }
+            else if ("$(error)".indexOf("has reached uptime limit") !== -1) {
+                alert("Your package has expired. Please select a new package.");
+            }
+        }
+
+        window.onload = function() {
+            checkErrors();
+        }
+    </script>
+</body>
+</html>
